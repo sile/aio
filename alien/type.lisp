@@ -15,35 +15,6 @@
   (let ((o (make-io-context-t :ptr io_context_t*)))
     (sb-ext:finalize o (lambda () (free-alien io_context_t*)))))
 
-#|
-struct iocb {
-        /* these are internal to the kernel/libc. */
-        __u64   aio_data;       /* data to be returned in event's data */
-        __u32   PADDED(aio_key, aio_reserved1);
-                                /* the kernel sets aio_key to the req # */
-
-        /* common fields */
-        __u16   aio_lio_opcode; /* see IOCB_CMD_ above */
-        __s16   aio_reqprio;
-        __u32   aio_fildes;
-
-        __u64   aio_buf;
-        __u64   aio_nbytes;
-        __s64   aio_offset;
-
-        /* extra parameters */
-        __u64   aio_reserved2;  /* TODO: use this for a (struct sigevent *) */
-
-        /* flags for the "struct iocb" */
-        __u32   aio_flags;
-
-        /*
-         * if the IOCB_FLAG_RESFD flag of "aio_flags" is set, this is an
-         * eventfd to signal AIO readiness to
-         */
-        __u32   aio_resfd;
-}; /* 64 bytes */
-|#
 (define-alien-type iocb
   (struct nil
     ;; these are internal to the kernel/libc
@@ -54,7 +25,7 @@ struct iocb {
     (reqprio    (signed   16))
     (fildes     (unsigned 32))
     
-    (buf    (unsigned 64))
+    (buf    (* t)) ;(unsigned 64))
     (nbytes (unsigned 64))
     (offset (signed   64))
 
@@ -86,3 +57,43 @@ struct iocb {
 (defaccessor iocb offset)
 (defaccessor iocb flags)
 (defaccessor iocb resfd)
+
+(defstruct buffer
+  (ptr nil :type (alien (* (unsigned 1))))
+  (size 0  :type (alien int)))
+
+(defun allocate-buffer (size &key auto-free)
+  (let ((o (make-buffer :size size
+                        :ptr (make-alien (unsigned 1) size))))
+    (if (null auto-free)
+        o
+      (sb-ext:finalize o (lambda () (free-buffer o))))))
+
+(defun free-buffer (buffer)
+  (free-alien (buffer-ptr buffer)))
+
+
+(deftype iocb-cmd () '(member :pread :pwrite :fsync :fdsync :preadx :poll :noop :preadv :pwritev))
+(defstruct request
+  (op   :noop :type iocb-cmd)
+  (priority 0 :type fixnum) ; XXX
+  (fd       0 :type fixnum) ; XXX
+  (buf      0 :type buffer)
+  (nbytes   0 :type fixnum) ; XXX
+  (offset   0 :type fixnum) ; XXX
+  (flags    0 :type fixnum) ; XXX
+  (resfd    0 :type fixnum) ; XXX
+  )
+
+(defun op-value (op)
+  (declare (iocb-cmd op))
+  (case op
+    (:pread +IOCB_CMD_PREAD+)
+    (:pwrite +IOCB_CMD_PWRITE+)
+    (:fsync +IOCB_CMD_FSYNC+)
+    (:fdsync +IOCB_CMD_FDSYNC+)
+    (:preadx +IOCB_CMD_PREADX+)
+    (:pool +IOCB_CMD_POLL+)
+    (:noop +IOCB_CMD_NOOP+)
+    (:preadv +IOCB_CMD_PREADV+)
+    (:pwritev +IOCB_CMD_PWRITEV+)))

@@ -1,5 +1,6 @@
 (in-package :aio.alien)
 
+(defconstant +EBADF+ 9)
 (defconstant +EAGAIN+ 11)
 (defconstant +EFAULT+ 14)
 (defconstant +ENOMEM+ 12)
@@ -15,3 +16,7 @@
 (defconstant +IOCB_CMD_NOOP+ 6)
 (defconstant +IOCB_CMD_PREADV+ 7)
 (defconstant +IOCB_CMD_PWRITEV+ 8)
+
+(defconstant +F_GETFL+ 3)
+(defconstant +F_SETFL+ 4)
+(defconstant +O_DIRECT+ 16384)

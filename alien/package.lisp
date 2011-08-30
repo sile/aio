@@ -6,5 +6,12 @@
            io-destroy
            io-submit 
            io-cancel
-           io-getevents))
+           io-getevents
+
+           allocate-buffer
+           free-buffer
+           make-request
+           
+           o-direct
+           ))
 (in-package :aio.alien)
