@@ -28,8 +28,6 @@
             (values (get-errno) nil)
           (values direct? t))))))
 
-;fcntl(__aiocbp->aio_fildes, F_SETFL, fd_arg | O_DIRECT);
-
 (defun fill-by-0 (ptr size)
   (declare ((alien (* t)) ptr))
   (memset ptr 0 size))
@@ -69,14 +67,16 @@
       (otherwise  (values nil :UNKNOWN)))))
 
 (defmacro io_submit_wrap (ctx nr iocb**)
-  `(case (- (io_submit ,ctx ,nr ,iocb**))
-     (0 (values t t))
-     (#.+EFAULT+ (values nil :EFAULT))
-     (#.+EINVAL+ (values nil :EINVAL))
-     (#.+EBADF+  (values nil :EBADF))
-     (#.+EAGAIN+ (values nil :EAGAIN))
-     (#.+ENOSYS+ (values nil :ENOSYS))
-     (otherwise  (values nil :UNKNOWN))))
+  `(let ((n-submited (io_submit ,ctx ,nr ,iocb**)))
+     (if (minusp n-submited)
+         (case (- n-submited)
+           (#.+EFAULT+ (values nil :EFAULT))
+           (#.+EINVAL+ (values nil :EINVAL))
+           (#.+EBADF+  (values nil :EBADF))
+           (#.+EAGAIN+ (values nil :EAGAIN))
+           (#.+ENOSYS+ (values nil :ENOSYS))
+           (otherwise  (values nil :UNKNOWN)))
+       (values n-submited t))))
 
 (defun io-submit-1 (context request)
   (declare (ignorable request))
