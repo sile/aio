@@ -1,5 +1,5 @@
 (defpackage aio
-  (:use :common-lisp :sb-alien)
+  (:use :common-lisp)
   (:export ))
 (in-package :aio)
 
