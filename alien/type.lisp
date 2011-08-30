@@ -2,7 +2,7 @@
 
 (define-alien-type size_t (unsigned 64))
 
-(define-alien-type io_context_t (array unsigned 8)) ; TODO: (opaque 8)
+(define-alien-type io_context_t (unsigned 64)) ; TODO: (opaque 8)
 (define-symbol-macro io_context_t.size (alien-size io_context_t :bytes))
 
 (defstruct io-context-t
@@ -14,7 +14,3 @@
 (defun io-context-t.new (io_context_t*)
   (let ((o (make-io-context-t :ptr io_context_t*)))
     (sb-ext:finalize o (lambda () (free-alien io_context_t*)))))
-
-
-                   
-

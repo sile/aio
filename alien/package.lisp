@@ -6,5 +6,6 @@
            io-destroy
            io-submit 
            io-cancel
-           io-getevents))
+           io-getevents
+           io-fsync))
 (in-package :aio.alien)
