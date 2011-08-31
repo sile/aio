@@ -93,9 +93,11 @@
     (1 (io-submit-1 context (first requests)))
     (t :TODO)))
 
-(declaim (inline epoll_ctl))
+(declaim (inline epoll_ctl epoll_wait))
 (define-alien-routine epoll_create1 int (flags int))
-(define-alien-routine epoll_ctl int (epdf int) (op int) (fd int) (event (* epoll_event)))
+(define-alien-routine epoll_ctl int (epfd int) (op int) (fd int) (event (* epoll_event)))
+(define-alien-routine epoll_wait int (epfd int) (events (* epoll_event)) 
+                                     (maxevents int) (timeout int))
 
 (defun errsym (&optional (errno (get-errno)))
   (case errno
@@ -110,6 +112,7 @@
     (#.+ENOENT+ :ENOENT)
     (#.+ENOSPC+ :ENOSPC)
     (#.+EPERM+ :EPERM)
+    (#.+EFAULT+ :EFAULT)
     (otherwise errno)))
 
 (deftype epoll-flag () '(member :cloexec))
@@ -143,7 +146,8 @@
                                (:et  +EPOLLET+)
                                (:oneshot +EPOLLONESHOT+)))))
     (with-alien ((event epoll_event))
-      (setf (slot event 'events) events-n)
+      (setf (slot event 'events) events-n
+            (slot (slot event 'data) 'fd) fd)
       (if (/= -1 (epoll_ctl epfd op fd (addr event)))
           (values t t)
         (values nil (errsym))))))
@@ -156,3 +160,11 @@
 
 (defun %epoll-ctl-del (epfd fd &rest events)
   (%epoll-ctl epfd +EPOLL_CTL_DEL+ fd events))
+
+(defun %epoll-wait (epfd events &key (timeout 0))
+  (with-slots (head size) (the events events)
+    (let ((n (epoll_wait epfd (alien-sap head) size timeout)))
+      (if (/= -1 n)
+          (values n t)
+        (values nil (errsym))))))
+

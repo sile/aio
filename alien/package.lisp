@@ -19,5 +19,9 @@
            %epoll-ctl-add
            %epoll-ctl-mod
            %epoll-ctl-del
+           %epoll-wait
+
+           allocate-events
+           free-events
            ))
 (in-package :aio.alien)

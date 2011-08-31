@@ -109,4 +109,25 @@
 (define-alien-type epoll_event
   (struct nil
     (events (unsigned 32))
-    (data   epoll_data)))
+    (data   epoll_data :alignment 32)
+    ))
+
+(defstruct events
+  (head nil :type (alien (* t))) ;(alien (* epoll_event)))
+  (size   0 :type fixnum))
+
+(defmethod print-object ((o events) stream)
+  (print-unreadable-object (o stream :type t :identity t)
+    (format stream "~a ~a" :size (events-size o))))
+
+(defun allocate-events (size)
+  (make-events :size size
+               :head (make-alien epoll_event size)))
+
+(defun free-events (o)
+  (free-alien (events-head o)))
+
+(defun event-ref (events index)
+  (let ((e (deref (events-head events) index)))
+    (values (slot e 'events)
+            (slot (slot e 'data) 'fd))))  ; TODO: もっとわかりやすいIFに
