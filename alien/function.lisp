@@ -93,3 +93,66 @@
     (1 (io-submit-1 context (first requests)))
     (t :TODO)))
 
+(declaim (inline epoll_ctl))
+(define-alien-routine epoll_create1 int (flags int))
+(define-alien-routine epoll_ctl int (epdf int) (op int) (fd int) (event (* epoll_event)))
+
+(defun errsym (&optional (errno (get-errno)))
+  (case errno
+    (#.+EINVAL+ :EINVAL)
+    (#.+EMFILE+ :EMFILE)
+    (#.+ENFILE+ :ENFILE)
+    (#.+ENOMEM+ :ENOMEM)
+    (#.+EBADF+ :EBADF)
+    (#.+EINTR+ :EINTR)
+    (#.+EIO+ :EIO)
+    (#.+EEXIST+ :EEXIST)
+    (#.+ENOENT+ :ENOENT)
+    (#.+ENOSPC+ :ENOSPC)
+    (#.+EPERM+ :EPERM)
+    (otherwise errno)))
+
+(deftype epoll-flag () '(member :cloexec))
+
+(defun %epoll-create (&rest flags)
+  (let* ((flag-n (loop FOR flag OF-TYPE epoll-flag IN flags
+                       SUM (ecase flag
+                             (:cloexec +EPOLL_CLOEXEC+))))
+         (fd (epoll_create1 flag-n)))
+    (if (/= -1 fd)
+        (values fd t)
+      (values nil (errsym)))))
+
+(defun %close (fd)
+  (multiple-value-bind (ok err) (sb-unix:unix-close fd)
+    (if ok
+        (values t t)
+      (values nil (errsym err)))))
+
+(deftype epoll-event () '(member :in :out :rdhup :pri :err :hup :et :oneshot))
+
+(defun %epoll-ctl (epfd op fd events) ; TODO: keyword 
+  (let* ((events-n (loop FOR e OF-TYPE epoll-event IN events
+                         SUM (ecase e
+                               (:in +EPOLLIN+)
+                               (:out +EPOLLOUT+)
+                               (:rdhup +EPOLLRDHUP+)
+                               (:pri +EPOLLPRI+) ; TODO:
+                               (:err +EPOLLERR+)
+                               (:hup +EPOLLHUP+)
+                               (:et  +EPOLLET+)
+                               (:oneshot +EPOLLONESHOT+)))))
+    (with-alien ((event epoll_event))
+      (setf (slot event 'events) events-n)
+      (if (/= -1 (epoll_ctl epfd op fd (addr event)))
+          (values t t)
+        (values nil (errsym))))))
+
+(defun %epoll-ctl-add (epfd fd &rest events)
+  (%epoll-ctl epfd +EPOLL_CTL_ADD+ fd events))
+
+(defun %epoll-ctl-mod (epfd fd &rest events)
+  (%epoll-ctl epfd +EPOLL_CTL_MOD+ fd events))
+
+(defun %epoll-ctl-del (epfd fd &rest events)
+  (%epoll-ctl epfd +EPOLL_CTL_DEL+ fd events))

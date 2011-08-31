@@ -13,5 +13,11 @@
            make-request
            
            o-direct
+
+           %epoll-create
+           %close
+           %epoll-ctl-add
+           %epoll-ctl-mod
+           %epoll-ctl-del
            ))
 (in-package :aio.alien)

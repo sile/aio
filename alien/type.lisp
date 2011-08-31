@@ -97,3 +97,16 @@
     (:noop +IOCB_CMD_NOOP+)
     (:preadv +IOCB_CMD_PREADV+)
     (:pwritev +IOCB_CMD_PWRITEV+)))
+
+
+(define-alien-type epoll_data 
+  (union nil
+    (ptr (* t))
+    (fd  int)
+    (u32 (unsigned 32))
+    (u64 (unsigned 64))))
+
+(define-alien-type epoll_event
+  (struct nil
+    (events (unsigned 32))
+    (data   epoll_data)))
