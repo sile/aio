@@ -3,6 +3,10 @@
 (defun str (error-code)
   (sb-int:strerror error-code))
 
+(defun errno ()
+  (sb-alien:get-errno))
+
+(defconstant SUCCESS 0 "Success")
 (defconstant PERM 1 "Operation not permitted") 
 (defconstant NOEN 2 "No such file or directory") 
 (defconstant SRCH 3 "No such process") 

@@ -1,0 +1,11 @@
+(in-package :aio.alien.epoll)
+
+(declaim (inline %create1 %ctl %wait %close))
+(define-alien-routine ("epoll_create1" %create1) 
+                      int (flags int))
+(define-alien-routine ("epoll_ctl" %ctl) 
+                      int (epfd int) (op int) (fd int) (event (* epoll_event)))
+(define-alien-routine ("epoll_wait" %wait)
+                      int (epfd int) (events (* epoll_event)) (maxevents int) (timeout int))
+(define-alien-routine ("close" %close)
+                      int (fd int))

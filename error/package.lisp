@@ -2,7 +2,9 @@
   (:use :common-lisp)
   (:nicknames aio.e)
   (:export str
+           errno
            
+           SUCCESS
            2BIG
            ACCES
            ADDRINUSE
