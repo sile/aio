@@ -42,4 +42,4 @@
 (defconstant +EPOLLHUP+ 16)
 (defconstant +EPOLLRDHUP+ 8192)
 (defconstant +EPOLLONESHOT+ 1073741824)
-(defconstant +EPOLLET+ -2147483648)
+(defconstant +EPOLLET+ 2164260864) ; -2147483648)

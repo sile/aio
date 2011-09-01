@@ -1,7 +1,12 @@
 (defpackage aio
   (:use :common-lisp)
   (:export *default-maxevents*
-           *default-context*))
+           *default-context*
+           *default-epoll*
+           
+           set-handler
+           wait
+           ))
 (in-package :aio)
 
 (defparameter *fastest* '(optimize (speed 3) (safety 0) (debug 0)))
@@ -9,3 +14,7 @@
 
 (defvar *default-maxevents* 1024)
 (defvar *default-context* (aio.alien:io-setup *default-maxevents*))
+
+(defvar *default-epoll* (aio.alien:%epoll-create))
+
+(defvar *default-event-buffer* (aio.alien:allocate-events 16))

@@ -135,7 +135,8 @@
 (deftype epoll-event () '(member :in :out :rdhup :pri :err :hup :et :oneshot))
 
 (defun %epoll-ctl (epfd op fd events) ; TODO: keyword 
-  (let* ((events-n (loop FOR e OF-TYPE epoll-event IN events
+  (let* ((events-n (loop FOR (e bool) ON events BY #'cddr
+                         WHEN bool
                          SUM (ecase e
                                (:in +EPOLLIN+)
                                (:out +EPOLLOUT+)
