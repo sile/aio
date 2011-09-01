@@ -78,3 +78,43 @@
            '(vector (unsigned-byte 8)))
    :external-format '(:utf-8 :replacement #\?)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun create-context ()
+  ;; TODO: 生のFDではなく、structでラップする
+  (aio.alien.epoll:create :cloexec t))
+
+(defun destroy-context (context)
+  (aio.alien.epoll:close context))
+
+;; TODO: (set-event fd flag) = (set-event fd (aio.event :in :out))
+(defun set-event (fd &key (context *default-context*)
+                          (modify-if-exists t)
+                          in out pri err hup rdhup et oneshot)
+  (multiple-value-bind (ret err)
+                       (aio.alien.epoll:ctl-add context fd
+                                                :in in :out out :pri pri 
+                                                :err err :hup hup :rdhup rdhup 
+                                                :et et :oneshot oneshot)
+    (if (= aio.e:SUCCESS err)
+        (values ret t)
+      (if (or (not modify-if-exists)
+              (/= aio.e:EXIST err))
+          (values nil err)
+        (aio.alien.epoll:ctl-mod context fd
+                                 :in in :out out :pri pri 
+                                 :err err :hup hup :rdhup rdhup 
+                                 :et et :oneshot oneshot)))))
+
+(defun del-event (fd &key (context *default-context*))
+  (aio.alien.epoll:ctl-del context fd))
+
+(defconstant +MAX_EVENTS_PER_WAIT+ 32)
+(defmacro do-event ((fd events &key (context *default-context*)
+                                    (timeout 0)
+                                    (limit (1+ +MAX_EVENTS_PER_WAIT+)))
+                    &body body)
+  ;(do-event-impl ...)
+  (with-alien ((es (array aio.alien.epoll::epoll_event) #.+MAX_EVENTS_PER_WAIT+))
+    es))
+              
+                                                

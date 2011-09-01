@@ -19,6 +19,14 @@
            ;; TODO: with-xxx
            
            to-lisp-string
+
+           ;;;;;;;;;;
+           ;; TODO: aio.eventパッケージ?
+           create-context
+           close-context
+           set-event
+           del-event
+           do-event
            ))
 (in-package :aio)
 
@@ -26,7 +34,7 @@
 (defparameter *interface* '(optimize (speed 3) (safety 2) (debug 1)))
 
 (defvar *default-maxevents* 1024)
-(defvar *default-context* (aio.alien:io-setup *default-maxevents*))
+(defvar *default-context* (aio.alien.epoll:create :cloexec t)) ; XXX
 
 (defvar *default-epoll* (aio.alien:%epoll-create))
 
