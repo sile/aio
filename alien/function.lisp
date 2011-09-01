@@ -28,6 +28,23 @@
             (values (get-errno) nil)
           (values direct? t))))))
 
+(defun o-nonblock (fd)
+  (let ((opt (fcntl fd +F_GETFL+ 0)))
+    (if (= -1 opt)
+        (values (errsym) nil)
+      (values (/= 0 (logand +O_NONBLOCK+ opt)) t))))
+
+(defun (setf o-nonblock) (nonblock? fd)
+  (let ((opt (fcntl fd +F_GETFL+ 0))) 
+    (if (= -1 opt)
+        (values (errsym) nil)
+      (let ((ret (if nonblock?
+                     (fcntl fd +F_SETFL+ (logior opt +O_NONBLOCK+))
+                   (fcntl fd +F_SETFL+ (logxor opt +O_NONBLOCK+)))))
+        (if (= -1 ret)
+            (values (errsym) nil)
+          (values nonblock? t))))))
+
 (defun fill-by-0 (ptr size)
   (declare ((alien (* t)) ptr))
   (memset ptr 0 size))
@@ -101,6 +118,7 @@
 
 (defun errsym (&optional (errno (get-errno)))
   (case errno
+    (#.+EAGAIN+ :EAGAIN)
     (#.+EINVAL+ :EINVAL)
     (#.+EMFILE+ :EMFILE)
     (#.+ENFILE+ :ENFILE)
@@ -169,3 +187,11 @@
           (values n t)
         (values nil (errsym))))))
 
+(defun alloc-bytes (size &key auto-free)
+  (let ((o (make-alien (unsigned 8) size)))
+  (if (null auto-free)
+      o
+    (sb-ext:finalize o (lambda () (free-bytes o))))))
+
+(defun free-bytes (bytes)
+  (free-alien bytes))

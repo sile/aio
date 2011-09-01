@@ -28,6 +28,7 @@
 (defconstant +F_GETFL+ 3)
 (defconstant +F_SETFL+ 4)
 (defconstant +O_DIRECT+ 16384)
+(defconstant +O_NONBLOCK+ 2048)
 
 (defconstant +EPOLL_CLOEXEC+ 524288)
 

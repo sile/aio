@@ -13,6 +13,7 @@
            make-request
            
            o-direct
+           o-nonblock
 
            %epoll-create
            %close
@@ -23,5 +24,8 @@
 
            allocate-events
            free-events
+
+           alloc-bytes
+           free-bytes
            ))
 (in-package :aio.alien)

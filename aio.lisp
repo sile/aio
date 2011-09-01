@@ -36,3 +36,45 @@
           (let ((handler (get-handler fd)))
             (rem-handler fd)
             (funcall handler)))))))
+
+(defun alloc-bytes (size &key auto-free)
+  (aio.alien:alloc-bytes size :auto-free auto-free))
+
+(defun free-bytes (bytes)
+  (aio.alien:free-bytes bytes))
+
+;; XXX:
+(defun nonblock-read (fd bytes size &aux (ptr (sb-alien:alien-sap bytes)))
+  (multiple-value-bind (ret ok)
+                       (aio.alien:o-nonblock fd)
+    (if (not ok)
+        (values nil ret)
+      (if ret
+          (values (sb-unix:unix-read fd ptr size)
+                  (aio.alien::errsym))
+        (progn  ; XXX: check
+          (setf (aio.alien:o-nonblock fd) t)
+          (multiple-value-prog1 (values (sb-unix:unix-read fd ptr size) (aio.alien::errsym))
+            (setf (aio.alien:o-nonblock fd) nil)))))))
+
+;; TODO: native-ioパッケージを用意？ (fcntl, read, write)
+(defun nonblock-write (fd bytes size &aux (ptr (sb-alien:alien-sap bytes)))
+  (multiple-value-bind (ret ok)
+                       (aio.alien:o-nonblock fd)
+    (if (not ok)
+        (values nil ret)
+      (if ret
+          (values (sb-unix:unix-write fd ptr 0 size)
+                  (aio.alien::errsym))
+        (progn  ; XXX: check
+          (setf (aio.alien:o-nonblock fd) t)
+          (multiple-value-prog1 (values (sb-unix:unix-write fd ptr 0 size) (aio.alien::errsym))
+            (setf (aio.alien:o-nonblock fd) nil)))))))
+
+(defun to-lisp-string (bytes size)
+  (sb-ext:octets-to-string
+   (coerce (loop FOR i FROM 0 BELOW size
+                 COLLECT (sb-alien:deref bytes i))
+           '(vector (unsigned-byte 8)))
+   :external-format '(:utf-8 :replacement #\?)))
+

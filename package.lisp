@@ -6,6 +6,15 @@
            
            set-handler
            wait
+
+           nonblock-read
+           nonblock-write
+           
+           alloc-bytes
+           free-bytes
+           ;; TODO: with-xxx
+           
+           to-lisp-string
            ))
 (in-package :aio)
 
