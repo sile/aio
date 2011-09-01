@@ -7,7 +7,13 @@
   :description "Asynchronous A/O pakcage for SBCL"
   
   :serial t
-  :components ((:file "alien/package")
+  :components ((:file "error/package")
+               (:file "error/error")
+               (:file "alien/common/package")
+               (:file "alien/common/error")
+               (:file "alien/common/common")
+               
+               (:file "alien/package")
                (:file "alien/init")
                (:file "alien/constant")
                (:file "alien/type")
