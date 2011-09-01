@@ -10,7 +10,7 @@
     `(defmacro ,name (o) `(slot ,o ',',field))))
 
 (defmacro defaccessors (type &rest fields)
-  `(progn ,@(mapcar (lambda (f) `(defaccessor ',type ',f)) fields)))
+  `(progn ,@(mapcar (lambda (f) `(defaccessor ,type ,f)) fields)))
 
 ;;;
 (define-alien-type epoll_data

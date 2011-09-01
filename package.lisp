@@ -10,6 +10,10 @@
            nonblock-read
            nonblock-write
            
+           read  ; TODO: add 'non-block' option
+           write
+           with-ensure-nonblock 
+           
            alloc-bytes
            free-bytes
            ;; TODO: with-xxx
