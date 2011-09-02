@@ -110,13 +110,15 @@
 (defun del-event (fd &key (context *default-context*))
   (aio.alien.epoll:ctl-del context fd))
 
-(defconstant +MAX_EVENTS_PER_WAIT+ 32)
+(eval-when (:compile-toplevel :load-toplevel)
+  (defconstant +MAX_EVENTS_PER_WAIT+ 32))
+
 (defmacro do-event ((fd events &key (context *default-context*)
                                     (timeout 0)
-                                    (limit (1+ +MAX_EVENTS_PER_WAIT+)))
+                                    (limit #.(1+ +MAX_EVENTS_PER_WAIT+)))
                     &body body)
   `(aio.alien.epoll:do-event (,fd ,events)
                              (,context :timeout ,timeout 
-                                       :buffer-size +MAX_EVENTS_PER_WAIT+
+                                       :buffer-size #.+MAX_EVENTS_PER_WAIT+
                                        :limit ,limit)
      ,@body))

@@ -22,12 +22,22 @@
 ;;
 (defmacro def-event-accessor (name constant)
   `(progn 
-     (defun ,name (flag)
+     (defun ,name (flag) 
        (ldb-test (byte 1 ,(1- (integer-length (symbol-value constant)))) flag))
-     
-     (defun (setf ,name) (on/off flag)
-       (setf (ldb (byte 1 ,(1- (integer-length (symbol-value constant)))) flag) (if on/off 1 0))
-       on/off)))
+
+     (define-setf-expander ,name (flag &environment env)
+       (multiple-value-bind (temps vals _1 setter getter)
+                            (get-setf-expansion flag env)
+         (declare (ignore _1))
+         (let ((on? (gensym)))
+           (values temps
+                   vals
+                   `(,on?)
+                   `(progn (setf (ldb (byte 1 ,,(1- (integer-length (symbol-value constant))))
+                                      ,getter)
+                                 (if ,on? 1 0))
+                           ,on?)
+                   `(,',name ,setter)))))))
 
 (def-event-accessor event-in +IN+)
 (def-event-accessor event-out +OUT+)
@@ -66,14 +76,14 @@
   (ctl epfd +CTL_DEL+ fd))
 
 (defun wait (epfd *events size &key (timeout 0))
-  (unix-return (%wait epfd *events size timeout) :on-success t))
+  (unix-return (%wait epfd *events size timeout)))
 
 (declaim (inline do-event-impl))
 (defun do-event-impl (fn epfd *events timeout limit)
-  (multiple-value-bind (ok? err)
+  (multiple-value-bind (ready-event-num err)
                        (wait epfd *events limit :timeout timeout)
-    (if ok?
-        (dotimes (i limit (values t err))
+    (if ready-event-num
+        (dotimes (i ready-event-num (values ready-event-num err))
           (let* ((e (deref *events i) )
                  (events (epoll_event.events e))
                  (fd (epoll_data.fd (epoll_event.data e))))
