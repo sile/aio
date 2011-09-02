@@ -3,7 +3,7 @@
   (:shadow :common-lisp close)
   (:export create
            close
-           wait
+           wait do-event
            ctl-add
            ctl-mod
            ctl-del

@@ -67,3 +67,27 @@
 
 (defun wait (epfd *events size &key (timeout 0))
   (unix-return (%wait epfd *events size timeout) :on-success t))
+
+(declaim (inline do-event-impl))
+(defun do-event-impl (fn epfd *events timeout limit)
+  (multiple-value-bind (ok? err)
+                       (wait epfd *events limit :timeout timeout)
+    (if ok?
+        (dotimes (i limit (values t err))
+          (let* ((e (deref *events i) )
+                 (events (epoll_event.events e))
+                 (fd (epoll_data.fd (epoll_event.data e))))
+            (funcall fn fd events)))
+      (values nil err))))
+
+(defmacro do-event ((fd events) 
+                    (epfd &key timeout
+                               buffer-size
+                               limit)
+                    &body body)
+  (let ((buf (gensym)))
+    `(with-alien ((,buf (array epoll_event ,buffer-size)))
+       (do-event-impl 
+        (lambda (,fd ,events)
+          ,@body)
+        ,epfd (addr (deref ,buf 0)) ,timeout (min ,limit (1+ ,buffer-size))))))
