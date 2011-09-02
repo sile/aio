@@ -33,9 +33,5 @@
 (defparameter *fastest* '(optimize (speed 3) (safety 0) (debug 0)))
 (defparameter *interface* '(optimize (speed 3) (safety 2) (debug 1)))
 
-(defvar *default-maxevents* 1024)
 (defvar *default-context* (aio.alien.epoll:create :cloexec t)) ; XXX
 
-(defvar *default-epoll* (aio.alien:%epoll-create))
-
-(defvar *default-event-buffer* (aio.alien:allocate-events 16))

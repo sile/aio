@@ -17,12 +17,5 @@
                (:file "alien/epoll/type")
                (:file "alien/epoll/function")
                (:file "alien/epoll/epoll")
-               
-               (:file "alien/package")
-               (:file "alien/init")
-               (:file "alien/constant")
-               (:file "alien/type")
-               (:file "alien/function")
-               
                (:file "package")
                (:file "aio")))

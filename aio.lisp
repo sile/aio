@@ -1,5 +1,6 @@
 (in-package :aio)
 
+#|
 (defparameter *fd->handler* (make-hash-table))
 (defun get-handler(fd)
   (gethash fd *fd->handler*))
@@ -77,6 +78,7 @@
                  COLLECT (sb-alien:deref bytes i))
            '(vector (unsigned-byte 8)))
    :external-format '(:utf-8 :replacement #\?)))
+|#
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun create-context ()
@@ -109,6 +111,7 @@
   (aio.alien.epoll:ctl-del context fd))
 
 (defconstant +MAX_EVENTS_PER_WAIT+ 32)
+#|
 (defmacro do-event ((fd events &key (context *default-context*)
                                     (timeout 0)
                                     (limit (1+ +MAX_EVENTS_PER_WAIT+)))
@@ -116,5 +119,4 @@
   ;(do-event-impl ...)
   (with-alien ((es (array aio.alien.epoll::epoll_event) #.+MAX_EVENTS_PER_WAIT+))
     es))
-              
-                                                
+|#
