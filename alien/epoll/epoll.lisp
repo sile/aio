@@ -48,35 +48,23 @@
 (def-event-accessor event-et +ET+)
 (def-event-accessor event-oneshot +ONESHOT+)
 
-(defun ctl (epfd op fd &key in out pri err hup rdhup et oneshot)
-  (let ((flag 0))
-    (setf (event-in flag) in
-          (event-out flag) out
-          (event-pri flag) pri
-          (event-err flag) err
-          (event-hup flag) hup
-          (event-rdhup flag) rdhup
-          (event-et flag) et
-          (event-oneshot flag) oneshot)
+(defun ctl (epfd op fd events)
+  (with-alien ((e epoll_event))
+    (setf (epoll_event.events e) events
+          (epoll_data.fd (epoll_event.data e)) fd)
+    (unix-return (%ctl epfd op fd (addr e)) :on-success t)))
 
-    (with-alien ((e epoll_event))
-      (setf (epoll_event.events e) flag
-            (epoll_data.fd (epoll_event.data e)) fd)
-      (unix-return (%ctl epfd op fd (addr e)) :on-success t))))
+(defun ctl-add (epfd fd events)
+  (ctl epfd +CTL_ADD+ fd events))
 
-(defun ctl-add (epfd fd &key in out pri err hup rdhup et oneshot)
-  (ctl epfd +CTL_ADD+ fd 
-       :in in :out out :pri pri :err err :hup hup :rdhup rdhup :et et :oneshot oneshot))
-
-(defun ctl-mod (epfd fd &key in out pri err hup rdhup et oneshot)
-  (ctl epfd +CTL_MOD+ fd 
-       :in in :out out :pri pri :err err :hup hup :rdhup rdhup :et et :oneshot oneshot))
+(defun ctl-mod (epfd fd events)
+  (ctl epfd +CTL_MOD+ fd events))
 
 (defun ctl-del (epfd fd)
-  (ctl epfd +CTL_DEL+ fd))
+  (ctl epfd +CTL_DEL+ fd 0))
 
 (defun wait (epfd *events size &key (timeout 0))
-  (unix-return (%wait epfd *events size timeout)))
+  (unix-return (%wait epfd (alien-sap *events) size timeout)))
 
 (declaim (inline do-event-impl))
 (defun do-event-impl (fn epfd *events timeout limit)

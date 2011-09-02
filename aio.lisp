@@ -81,44 +81,83 @@
 |#
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defstruct context 
+  (fd 0 :type fixnum)) ; TODO: file-descriptor-t)
+
+(defmethod print-object ((o context) stream)
+  (print-unreadable-object (o stream :identity t :type t)))
+
 (defun create-context ()
-  ;; TODO: 生のFDではなく、structでラップする
-  (aio.alien.epoll:create :cloexec t))
+  (multiple-value-bind (fd err)
+                       (aio.alien.epoll:create :cloexec t)
+    (if (null fd)
+        (values nil err)
+      (values (sb-ext:finalize (make-context :fd fd)
+                               (lambda () (aio.alien.epoll:close fd)))
+              0))))
 
-(defun destroy-context (context)
-  (aio.alien.epoll:close context))
+;; TODO: 適切な場所に移動
+(defvar *default-context* (create-context))
 
-;; TODO: (set-event fd flag) = (set-event fd (aio.event :in :out))
-(defun set-event (fd &key (context *default-context*)
-                          (modify-if-exists t)
-                          in out pri err hup rdhup et oneshot)
-  (multiple-value-bind (ret err)
-                       (aio.alien.epoll:ctl-add context fd
-                                                :in in :out out :pri pri 
-                                                :err err :hup hup :rdhup rdhup 
-                                                :et et :oneshot oneshot)
-    (if (= aio.e:SUCCESS err)
-        (values ret t)
-      (if (or (not modify-if-exists)
-              (/= aio.e:EXIST err))
-          (values nil err)
-        (aio.alien.epoll:ctl-mod context fd
-                                 :in in :out out :pri pri 
-                                 :err err :hup hup :rdhup rdhup 
-                                 :et et :oneshot oneshot)))))
+(defun watch (fd event &key (context *default-context*))
+  (let ((epfd (context-fd context)))
+    (multiple-value-bind (ret err)
+                         (aio.alien.epoll:ctl-add epfd fd (event-flags event))
+      (if (= aio.e:SUCCESS err)
+          (values ret t)
+        (if (/= aio.e:EXIST err)
+            (values nil err)
+          (aio.alien.epoll:ctl-mod epfd fd (event-flags event)))))))
+  
+(defun unwatch (fd &key (context *default-context*))
+  (aio.alien.epoll:ctl-del (context-fd context) fd))
 
-(defun del-event (fd &key (context *default-context*))
-  (aio.alien.epoll:ctl-del context fd))
 
 (eval-when (:compile-toplevel :load-toplevel)
   (defconstant +MAX_EVENTS_PER_WAIT+ 32))
 
-(defmacro do-event ((fd events &key (context *default-context*)
-                                    (timeout 0)
-                                    (limit #.(1+ +MAX_EVENTS_PER_WAIT+)))
-                    &body body)
-  `(aio.alien.epoll:do-event (,fd ,events)
-                             (,context :timeout ,timeout 
-                                       :buffer-size #.+MAX_EVENTS_PER_WAIT+
-                                       :limit ,limit)
-     ,@body))
+(defstruct event
+  (flags 0 :type fixnum)) ; TODO:
+
+(defun event-in (event) (aio.alien.epoll:event-in (event-flags event)))
+(defun event-out (event) (aio.alien.epoll:event-out (event-flags event)))
+(defun event-pri (event) (aio.alien.epoll:event-pri (event-flags event)))
+(defun event-err (event) (aio.alien.epoll:event-err (event-flags event)))
+(defun event-hup (event) (aio.alien.epoll:event-hup (event-flags event)))
+(defun event-rdhup (event) (aio.alien.epoll:event-rdhup (event-flags event)))
+(defun event-et (event) (aio.alien.epoll:event-et (event-flags event)))
+(defun event-oneshot (event) (aio.alien.epoll:event-oneshot (event-flags event)))
+
+(defun event (&rest events)
+  (make-event :flags
+  (loop FOR e IN (remove-duplicates events)
+        SUM (ecase e
+              (:in aio.alien.epoll::+IN+)
+              (:out aio.alien.epoll::+OUT+)
+              (:pri aio.alien.epoll::+PRI+)
+              (:err aio.alien.epoll::+ERR+)
+              (:hup aio.alien.epoll::+HUP+)
+              (:rdhup aio.alien.epoll::+RDHUP+)
+              (:et aio.alien.epoll::+ET+)
+              (:oneshot aio.alien.epoll::+ONESHOT+)))))
+  
+(defmethod print-object ((o event) stream)
+  (print-unreadable-object (o stream :type t)
+    (format stream "~{~S~^ ~}" 
+            (loop FOR (name getter) IN `((:in ,#'event-in) (:out ,#'event-out)
+                                         (:pri ,#'event-pri) (:err ,#'event-err)
+                                         (:hup ,#'event-hup) (:rdhup ,#'event-rdhup)
+                                         (:et ,#'event-et) (:oneshot ,#'event-oneshot))
+                  WHEN (funcall getter o)
+                  COLLECT name))))
+
+(defmacro do-event ((fd event &key (context *default-context*)
+                                   (timeout 0)
+                                   (limit #.(1+ +MAX_EVENTS_PER_WAIT+)))
+                    &body body &aux (flags (gensym)))
+  `(aio.alien.epoll:do-event (,fd ,flags)
+                             ((context-fd ,context) :timeout ,timeout 
+                                                    :buffer-size #.+MAX_EVENTS_PER_WAIT+
+                                                    :limit ,limit)
+     (let ((,event (make-event :flags ,flags)))
+       ,@body)))
