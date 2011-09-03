@@ -9,6 +9,7 @@
            watch
            unwatch
            do-event
+           watchee-list
 
            event
            event-case 

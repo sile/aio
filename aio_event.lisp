@@ -2,10 +2,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defstruct context 
-  (fd 0 :type fixnum)) ; TODO: file-descriptor-t)
+  (fd 0 :type fixnum)  ; TODO: file-descriptor-t)
+  (watchee (make-hash-table) :type hash-table)) 
 
 (defmethod print-object ((o context) stream)
-  (print-unreadable-object (o stream :identity t :type t)))
+  (print-unreadable-object (o stream :type t)
+    (with-slots (fd watchee) o
+      (format stream "~s ~a ~s ~a" 
+              :id fd :watchee-count (hash-table-count watchee)))))
+
+(defun watchee-list (&optional (context *default-context*) &aux list)
+  (maphash (lambda (fd _)
+             (declare (ignore _))
+             (push fd list))
+           (context-watchee context))
+  (nreverse list))
 
 (defun create-context ()
   (multiple-value-bind (fd err)
@@ -20,17 +31,20 @@
 (defvar *default-context* (create-context))
 
 (defun watch (fd event &key (context *default-context*))
-  (let ((epfd (context-fd context)))
+  (with-slots ((epfd fd) watchee) context
     (multiple-value-bind (ret err)
                          (aio.alien.epoll:ctl-add epfd fd (event-flags event))
       (if (= aio.e:SUCCESS err)
-          (values ret t)
+          (progn (setf (gethash fd watchee) t)
+                 (values ret t))
         (if (/= aio.e:EXIST err)
             (values nil err)
           (aio.alien.epoll:ctl-mod epfd fd (event-flags event)))))))
   
 (defun unwatch (fd &key (context *default-context*))
-  (aio.alien.epoll:ctl-del (context-fd context) fd))
+  (with-slots ((epfd fd) watchee) context
+    (remhash fd watchee)
+    (aio.alien.epoll:ctl-del epfd fd)))
 
 
 (eval-when (:compile-toplevel :load-toplevel)
