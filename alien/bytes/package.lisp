@@ -6,5 +6,10 @@
            size
            ref
            subbytes
-           copy))
+           copy
+
+           bytes-ptr
+           bytes-start
+           bytes-end
+           ))
 (in-package :aio.alien.bytes)

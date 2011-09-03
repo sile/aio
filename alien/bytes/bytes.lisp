@@ -18,8 +18,8 @@
 
 (defun alloc-bytes (size)
   (let ((o (make-alien (unsigned 8) size)))
-    (sb-ext:finalize (make-bytes :ptr o :start 0 :end size)
-                     (lambda () (free-alien o)))))
+    (sb-ext:finalize o (lambda () (free-alien o)))
+    (make-bytes :ptr o :start 0 :end size)))
 
 (defun ref (bytes index)
   (with-slots (ptr start) (the bytes bytes)
