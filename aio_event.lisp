@@ -11,13 +11,6 @@
       (format stream "~s ~a ~s ~a" 
               :id fd :watchee-count (hash-table-count watchee)))))
 
-(defun watchee-list (&optional (context *default-context*) &aux list)
-  (maphash (lambda (fd _)
-             (declare (ignore _))
-             (push fd list))
-           (context-watchee context))
-  (nreverse list))
-
 (defun create-context ()
   (multiple-value-bind (fd err)
                        (aio.alien.epoll:create :cloexec t)
@@ -29,6 +22,13 @@
 
 ;; TODO: 適切な場所に移動
 (defvar *default-context* (create-context))
+
+(defun watchee-list (&optional (context *default-context*) &aux list)
+  (maphash (lambda (fd _)
+             (declare (ignore _))
+             (push fd list))
+           (context-watchee context))
+  (nreverse list))
 
 (defun watch (fd event &key (context *default-context*))
   (with-slots ((epfd fd) watchee) context
@@ -74,6 +74,20 @@
               (:rdhup aio.alien.epoll::+RDHUP+)
               (:et aio.alien.epoll::+ET+)
               (:oneshot aio.alien.epoll::+ONESHOT+)))))
+
+(defun create-event (&key in out pri err hup rdhup et oneshot)
+  (make-event
+   :flags (loop FOR (use? value) 
+                IN `((,in ,aio.alien.epoll::+IN+)
+                     (,out ,aio.alien.epoll::+OUT+)
+                     (,pri ,aio.alien.epoll::+PRI+)
+                     (,err ,aio.alien.epoll::+ERR+)
+                     (,hup ,aio.alien.epoll::+HUP+)
+                     (,rdhup ,aio.alien.epoll::+RDHUP+)
+                     (,et ,aio.alien.epoll::+ET+)
+                     (,oneshot ,aio.alien.epoll::+ONESHOT+))
+                WHEN use?
+                SUM value)))
   
 (defmethod print-object ((o event) stream)
   (print-unreadable-object (o stream :type t)
@@ -85,7 +99,7 @@
                   WHEN (funcall getter o)
                   COLLECT name))))
 
-(defmacro do-event ((fd event &key (context *default-context*)
+(defmacro do-event ((fd event &key (context '*default-context*)
                                    (timeout 0)
                                    (limit #.(1+ +MAX_EVENTS_PER_WAIT+)))
                     &body body &aux (flags (gensym)))

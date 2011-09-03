@@ -12,6 +12,7 @@
            watchee-list
 
            event
+           create-event
            event-case 
 
            event-in  ; in? or in-p
