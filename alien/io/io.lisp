@@ -47,16 +47,10 @@
 
 (defun read (fd bytes size &key force-nonblock)
   (if (not force-nonblock)
-      #1=(unix-return (%read fd bytes size)
-                      :on-fail (lambda (err)
-                                 (when (= err aio.e:AGAIN) 
-                                   :blocked)))
+      #1=(unix-return (%read fd bytes size))
     (ensure-nonblock (fd) #1#)))
 
 (defun write (fd bytes size &key force-nonblock)
   (if (not force-nonblock)
-      #1=(unix-return (%write fd bytes size)
-                      :on-fail (lambda (err)
-                                 (when (= err aio.e:AGAIN) 
-                                   :blocked)))
+      #1=(unix-return (%write fd bytes size))
     (ensure-nonblock (fd) #1#)))

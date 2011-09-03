@@ -21,3 +21,9 @@
 (defmacro ensure-nonblock ((fd) &body body)
   `(aio.alien.io:ensure-nonblock (,fd)
      ,@body))
+
+(defun blocked-p (errno)
+  (= aio.e:again errno))
+
+(defun inprogress-p (errno)
+  (= aio.e:inprogress errno))

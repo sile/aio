@@ -26,6 +26,8 @@
            ensure-nonblock
            read
            write
+           blocked-p
+           inprogress-p
 
            ;; TODO: aio.bytes
            make-bytes
