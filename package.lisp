@@ -34,6 +34,7 @@
            subbytes
            byte-ref
            bytes-size
+           copy
            ))
 (in-package :aio)
 

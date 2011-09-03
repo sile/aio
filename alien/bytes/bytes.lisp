@@ -45,4 +45,34 @@
   (with-slots (ptr (offset start)) bytes
     (make-bytes :ptr ptr
                 :start (+ offset start)
-                :end (+ offset end))))
+                :end (+ offset (or end (size bytes))))))
+
+;; TODO: defgeneric
+(defmethod generic-copy ((d bytes) (s bytes) &key start1 end1 start2 end2)
+  (let ((n (min (- (or end1 (size d)) start1)
+                (- (or end2 (size s)) start2))))
+    (dotimes (i n n)
+      (setf (ref d (+ i start1)) (ref s (+ i start2))))))
+
+(defmethod generic-copy ((d bytes) (s vector) &key start1 end1 start2 end2)
+  (let ((n (min (- (or end1 (size d)) start1)
+                (- (or end2 (length s)) start2))))
+    (dotimes (i n n)
+      (setf (ref d (+ i start1)) (aref s (+ i start2))))))
+
+(defmethod generic-copy ((d vector) (s bytes) &key start1 end1 start2 end2)
+  (let ((n (min (- (or end1 (length d)) start1)
+                (- (or end2 (size s)) start2))))
+    (dotimes (i n n)
+      (setf (aref d (+ i start1)) (ref s (+ i start2))))))
+
+(defmethod generic-copy ((d vector) (s vector) &key start1 end1 start2 end2)
+  (let ((n (min (- (or end1 (length d)) start1)
+                (- (or end2 (length s)) start2))))
+    (dotimes (i n n)
+      (setf (aref d (+ i start1)) (aref s (+ i start2))))))
+
+(defun copy (destination source &key (start1 0) end1
+                                     (start2 0) end2)
+  (generic-copy destination source :start1 start1 :end1 end1
+                                   :start2 start2 :end2 end2))

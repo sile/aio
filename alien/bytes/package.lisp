@@ -5,5 +5,6 @@
            from-bytes
            size
            ref
-           subbytes))
+           subbytes
+           copy))
 (in-package :aio.alien.bytes)

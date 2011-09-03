@@ -186,3 +186,6 @@
 
 (defun bytes-size (bytes)
   (aio.alien.bytes:size bytes))
+
+(defun copy (destination source)
+  (aio.alien.bytes:copy destination source))
