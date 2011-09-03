@@ -9,6 +9,8 @@
            do-event
 
            event
+           event-case 
+
            event-in  ; in? or in-p
            event-out
            event-pri

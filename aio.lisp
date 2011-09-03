@@ -143,7 +143,7 @@
   
 (defmethod print-object ((o event) stream)
   (print-unreadable-object (o stream :type t)
-    (format stream "~{~S~^ ~}" 
+    (format stream "~{~S ~}" 
             (loop FOR (name getter) IN `((:in ,#'event-in) (:out ,#'event-out)
                                          (:pri ,#'event-pri) (:err ,#'event-err)
                                          (:hup ,#'event-hup) (:rdhup ,#'event-rdhup)
@@ -161,3 +161,27 @@
                                                     :limit ,limit)
      (let ((,event (make-event :flags ,flags)))
        ,@body)))
+
+(defmacro event-case (event &rest clauses)
+  (let ((e (gensym))
+        (matched (gensym))
+        (default (cdr (assoc t clauses))))
+    `(let ((,e ,event)
+           (,matched nil))
+       ,@(loop FOR (key . body) IN clauses
+               WHEN (member key '(:in :out :pri :err :hup :rdhup :et :oneshot))
+           COLLECT
+           (case key
+             (:in `(when (event-in ,e) #1=(setf ,matched t) ,@body))
+             (:out `(when (event-out ,e) #1# ,@body))
+             (:pri `(when (event-pri ,e) #1# ,@body))
+             (:err `(when (event-err ,e) #1# ,@body))
+             (:hup `(when (event-hup ,e) #1# ,@body))
+             (:rdhup `(when (event-rdhup ,e) #1# ,@body))
+             (:et `(when (event-et ,e) #1# ,@body))
+             (:oneshot `(when (event-oneshot ,e) #1# ,@body))))
+       ,(when default
+          `(unless ,matched
+             ,@default))
+       t)))
+          
