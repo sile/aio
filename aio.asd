@@ -26,5 +26,7 @@
                (:file "alien/bytes/bytes")
 
                (:file "package")
-               (:file "aio")
+               (:file "aio_event")
+               (:file "aio_io")
+               (:file "aio_bytes")
                ))
