@@ -1,4 +1,4 @@
-(in-package :aio)
+(in-package :aio) ;; filename: aio_event.lisp
 
 #|
 (defparameter *fd->handler* (make-hash-table))
@@ -43,34 +43,6 @@
 
 (defun free-bytes (bytes)
   (aio.alien:free-bytes bytes))
-
-;; XXX:
-(defun nonblock-read (fd bytes size &aux (ptr (sb-alien:alien-sap bytes)))
-  (multiple-value-bind (ret ok)
-                       (aio.alien:o-nonblock fd)
-    (if (not ok)
-        (values nil ret)
-      (if ret
-          (values (sb-unix:unix-read fd ptr size)
-                  (aio.alien::errsym))
-        (progn  ; XXX: check
-          (setf (aio.alien:o-nonblock fd) t)
-          (multiple-value-prog1 (values (sb-unix:unix-read fd ptr size) (aio.alien::errsym))
-            (setf (aio.alien:o-nonblock fd) nil)))))))
-
-;; TODO: native-ioパッケージを用意？ (fcntl, read, write)
-(defun nonblock-write (fd bytes size &aux (ptr (sb-alien:alien-sap bytes)))
-  (multiple-value-bind (ret ok)
-                       (aio.alien:o-nonblock fd)
-    (if (not ok)
-        (values nil ret)
-      (if ret
-          (values (sb-unix:unix-write fd ptr 0 size)
-                  (aio.alien::errsym))
-        (progn  ; XXX: check
-          (setf (aio.alien:o-nonblock fd) t)
-          (multiple-value-prog1 (values (sb-unix:unix-write fd ptr 0 size) (aio.alien::errsym))
-            (setf (aio.alien:o-nonblock fd) nil)))))))
 
 (defun to-lisp-string (bytes size)
   (sb-ext:octets-to-string
@@ -185,3 +157,32 @@
              ,@default))
        t)))
           
+;;;;;;;;;;;;;;;
+(defun read (fd bytes size &key force-nonblock)
+  (aio.alien.io:read fd bytes size :force-nonblock force-nonblock))
+
+(defun write (fd bytes size &key force-nonblock)
+  (aio.alien.io:write fd bytes size :force-nonblock force-nonblock))
+
+(defmacro ensure-nonblock ((fd) &body body)
+  `(aio.alien.io:ensure-nonblock (,fd)
+     ,@body))
+
+;;;;;;;;;;;;;;;
+(defun make-bytes (size)
+  (aio.alien.bytes:alloc-bytes size))
+
+(defun to-bytes (lisp-bytes)
+  (aio.alien.bytes:to-bytes lisp-bytes))
+
+(defun from-bytes (bytes)
+  (aio.alien.bytes:from-bytes bytes))
+
+(defun subbytes (bytes start &optional end)
+  (aio.alien.bytes:subbytes bytes start end))
+
+(defun byte-ref (bytes index)
+  (aio.alien.bytes:ref bytes index))
+
+(defun bytes-size (bytes)
+  (aio.alien.bytes:size bytes))

@@ -1,6 +1,8 @@
 (defpackage aio
   (:use :common-lisp)
-  (:export *default-context*
+  (:shadow :common-lisp read write)
+  (:export ;; TODO: aio.event
+           *default-context*
 
            context
            create-context
@@ -19,6 +21,19 @@
            event-rdhup
            event-et
            event-oneshot
+           
+           ;; TODO: aio.io
+           ensure-nonblock
+           read
+           write
+
+           ;; TODO: aio.bytes
+           make-bytes
+           to-bytes
+           from-bytes
+           subbytes
+           byte-ref
+           bytes-size
            ))
 (in-package :aio)
 

@@ -17,6 +17,14 @@
                (:file "alien/epoll/type")
                (:file "alien/epoll/function")
                (:file "alien/epoll/epoll")
+
+               (:file "alien/io/package")
+               (:file "alien/io/function")
+               (:file "alien/io/io")
+
+               (:file "alien/bytes/package")
+               (:file "alien/bytes/bytes")
+
                (:file "package")
                (:file "aio")
                ))
