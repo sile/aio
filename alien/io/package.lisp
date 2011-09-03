@@ -3,5 +3,5 @@
   (:shadow :common-lisp read write)
   (:export read
            write
-           nonblock))
+           ensure-nonblock))
 (in-package :aio.alien.io)
