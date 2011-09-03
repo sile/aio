@@ -11,5 +11,7 @@
            bytes-ptr
            bytes-start
            bytes-end
+
+           bytes
            ))
 (in-package :aio.alien.bytes)

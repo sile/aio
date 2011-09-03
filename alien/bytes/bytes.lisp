@@ -10,8 +10,8 @@
     (- end start)))
 
 (defmethod print-object ((o bytes) stream)
-  (print-unreadable-object (o stream :identity t)
-    (format stream "~a ~s ~a" :bytes :size (bytes-size o))))
+  (print-unreadable-object (o stream :identity t :type t)
+    (format stream "~s ~a" :size (bytes-size o))))
 
 (defun size (bytes)
   (bytes-size bytes))
