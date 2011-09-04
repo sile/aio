@@ -3,7 +3,7 @@
 (defsystem aio
   :name "aio"
   :author "Takeru Ohta"
-  :version "0.0.1"
+  :version "0.0.2"
   :description "Asynchronous A/O pakcage for SBCL"
   
   :serial t
